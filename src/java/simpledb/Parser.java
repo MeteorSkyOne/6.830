@@ -1,11 +1,11 @@
 package simpledb;
 
-import Zql.*;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import Zql.*;
 import jline.ArgumentCompletor;
 import jline.ConsoleReader;
 import jline.SimpleCompletor;
@@ -138,7 +138,7 @@ public class Parser {
     }
 
     public LogicalPlan parseQueryLogicalPlan(TransactionId tid, ZQuery q)
-            throws IOException, Zql.ParseException, simpledb.ParsingException {
+            throws IOException, ParseException, simpledb.ParsingException {
         @SuppressWarnings("unchecked")
         List<ZFromItem> from = q.getFrom();
         LogicalPlan lp = new LogicalPlan();
@@ -280,7 +280,7 @@ public class Parser {
 
     public Query handleQueryStatement(ZQuery s, TransactionId tId)
             throws IOException,
-            simpledb.ParsingException, Zql.ParseException {
+            simpledb.ParsingException,ParseException {
         Query query = new Query(tId);
 
         LogicalPlan lp = parseQueryLogicalPlan(tId, s);
@@ -318,7 +318,7 @@ public class Parser {
 
     public Query handleInsertStatement(ZInsert s, TransactionId tId)
             throws DbException, IOException,
-            simpledb.ParsingException, Zql.ParseException {
+            simpledb.ParsingException, ParseException {
         int tableId;
         try {
             tableId = Database.getCatalog().getTableId(s.getTable()); // will
@@ -472,7 +472,7 @@ public class Parser {
             if (stmt instanceof ZQuery) {
                 return parseQueryLogicalPlan(tid, (ZQuery) stmt);
             }
-        } catch (Zql.ParseException e) {
+        } catch (ParseException e) {
             throw new simpledb.ParsingException(
                     "Invalid SQL expression: \n \t " + e);
         }
@@ -543,10 +543,10 @@ public class Parser {
                     this.inUserTrans = false;
 
                     if (a instanceof simpledb.ParsingException
-                            || a instanceof Zql.ParseException)
+                            || a instanceof ParseException)
                         throw new ParsingException((Exception) a);
-                    if (a instanceof Zql.TokenMgrError)
-                        throw (Zql.TokenMgrError) a;
+                    if (a instanceof TokenMgrError)
+                        throw (TokenMgrError) a;
                     throw new DbException(a.getMessage());
                 } finally {
                     if (!inUserTrans)
