@@ -88,8 +88,8 @@ You should see output similar to:
  build output...
 
 test:
-    [junit] Running simpledb.CatalogTest
-    [junit] Testsuite: simpledb.CatalogTest
+    [junit] Running com.simpledb.CatalogTest
+    [junit] Testsuite: com.simpledb.CatalogTest
     [junit] Tests run: 2, Failures: 0, Errors: 2, Time elapsed: 0.037 sec
     [junit] Tests run: 2, Failures: 0, Errors: 2, Time elapsed: 0.037 sec
 
@@ -141,11 +141,11 @@ $ ant systemtest
     [junit] java.lang.AssertionError: expected to find the following tuples:
     [junit]     19128
     [junit] 
-    [junit]     at simpledb.systemtest.SystemTestUtil.matchTuples(SystemTestUtil.java:122)
-    [junit]     at simpledb.systemtest.SystemTestUtil.matchTuples(SystemTestUtil.java:83)
-    [junit]     at simpledb.systemtest.SystemTestUtil.matchTuples(SystemTestUtil.java:75)
-    [junit]     at simpledb.systemtest.ScanTest.validateScan(ScanTest.java:30)
-    [junit]     at simpledb.systemtest.ScanTest.testSmall(ScanTest.java:40)
+    [junit]     at systemtest.com.simpledb.SystemTestUtil.matchTuples(SystemTestUtil.java:122)
+    [junit]     at systemtest.com.simpledb.SystemTestUtil.matchTuples(SystemTestUtil.java:83)
+    [junit]     at systemtest.com.simpledb.SystemTestUtil.matchTuples(SystemTestUtil.java:75)
+    [junit]     at systemtest.com.simpledb.ScanTest.validateScan(ScanTest.java:30)
+    [junit]     at systemtest.com.simpledb.ScanTest.testSmall(ScanTest.java:40)
 
  ... more error messages ...
 ```
@@ -159,7 +159,7 @@ $ ant systemtest
 
  ... build output ...
 
-    [junit] Testsuite: simpledb.systemtest.ScanTest
+    [junit] Testsuite: systemtest.com.simpledb.ScanTest
     [junit] Tests run: 3, Failures: 0, Errors: 0, Time elapsed: 7.278 sec
     [junit] Tests run: 3, Failures: 0, Errors: 0, Time elapsed: 7.278 sec
     [junit] 

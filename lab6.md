@@ -102,8 +102,8 @@ Here's what to do:
   ```
   % ant runsystest -Dtest=LogTest
     ...
-    [junit] Running simpledb.systemtest.LogTest
-    [junit] Testsuite: simpledb.systemtest.LogTest
+    [junit] Running systemtest.com.simpledb.LogTest
+    [junit] Testsuite: systemtest.com.simpledb.LogTest
     [junit] Tests run: 10, Failures: 0, Errors: 7, Time elapsed: 0.42 sec
     [junit] Tests run: 10, Failures: 0, Errors: 7, Time elapsed: 0.42 sec
     [junit] 
