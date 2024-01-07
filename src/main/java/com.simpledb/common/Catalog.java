@@ -23,12 +23,34 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    private class Table {
+
+        private DbFile dbFile;
+
+        private String name;
+
+        private String pkeyField;
+
+        public Table(DbFile dbFile, String name, String pkeyField) {
+            this.dbFile = dbFile;
+            this.name = name;
+            this.pkeyField = pkeyField;
+        }
+
+    }
+
+    private Map<Integer, Table> tables;
+
+    private Map<String, Integer> name2Id;
+
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
         // some code goes here
+        this.tables = new ConcurrentHashMap<>();
+        this.name2Id = new ConcurrentHashMap<>();
     }
 
     /**
@@ -42,6 +64,9 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        Table table = new Table(file, name, pkeyField);
+        this.tables.put(file.getId(), table);
+        this.name2Id.put(name, file.getId());
     }
 
     public void addTable(DbFile file, String name) {
@@ -65,7 +90,11 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+        if (name == null || !name2Id.containsKey(name)) {
+            throw new NoSuchElementException("the table doesn't exist");
+        } else {
+            return name2Id.get(name);
+        }
     }
 
     /**
@@ -76,7 +105,7 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        return tables.get(tableid).dbFile.getTupleDesc();
     }
 
     /**
@@ -87,29 +116,31 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        return tables.get(tableid).dbFile;
     }
 
     public String getPrimaryKey(int tableid) {
         // some code goes here
-        return null;
+        return tables.get(tableid).pkeyField;
     }
 
     public Iterator<Integer> tableIdIterator() {
         // some code goes here
-        return null;
+        return tables.keySet().iterator();
     }
 
     public String getTableName(int id) {
         // some code goes here
-        return null;
+        return tables.get(id).name;
     }
-    
+
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
+        this.tables.clear();
+        this.name2Id.clear();
     }
-    
+
     /**
      * Reads the schema from a file and creates the appropriate tables in the database.
      * @param catalogFile
@@ -119,7 +150,7 @@ public class Catalog {
         String baseFolder=new File(new File(catalogFile).getAbsolutePath()).getParent();
         try {
             BufferedReader br = new BufferedReader(new FileReader(catalogFile));
-            
+
             while ((line = br.readLine()) != null) {
                 //assume line is of the format name (field type, field type, ...)
                 String name = line.substring(0, line.indexOf("(")).trim();
