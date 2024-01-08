@@ -22,6 +22,10 @@ import java.util.*;
  */
 public class HeapFile implements DbFile {
 
+    private File file;
+
+    private TupleDesc td;
+
     /**
      * Constructs a heap file backed by the specified file.
      * 
@@ -31,6 +35,8 @@ public class HeapFile implements DbFile {
      */
     public HeapFile(File f, TupleDesc td) {
         // some code goes here
+        this.file = f;
+        this.td = td;
     }
 
     /**
@@ -40,7 +46,7 @@ public class HeapFile implements DbFile {
      */
     public File getFile() {
         // some code goes here
-        return null;
+        return file;
     }
 
     /**
@@ -54,7 +60,7 @@ public class HeapFile implements DbFile {
      */
     public int getId() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return file.getAbsoluteFile().hashCode();
     }
 
     /**
@@ -64,13 +70,23 @@ public class HeapFile implements DbFile {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return td;
     }
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
         // some code goes here
-        return null;
+        try {
+            RandomAccessFile raf = new RandomAccessFile(file, "r");
+            int offset = BufferPool.getPageSize() * pid.getPageNumber();
+            raf.seek(offset);
+            byte[] data = new byte[BufferPool.getPageSize()];
+            raf.read(data);
+            raf.close();
+            return new HeapPage((HeapPageId) pid, data);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // see DbFile.java for javadocs
@@ -84,7 +100,7 @@ public class HeapFile implements DbFile {
      */
     public int numPages() {
         // some code goes here
-        return 0;
+        return (int) (file.length() / BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
@@ -103,10 +119,68 @@ public class HeapFile implements DbFile {
         // not necessary for lab1
     }
 
+    private class HeapFileIterator implements DbFileIterator {
+
+        private TransactionId tid;
+
+        private HeapFile heapFile;
+
+        private Iterator<Tuple> it;
+
+        private int pageNo;
+
+        public HeapFileIterator(HeapFile heapFile) {
+            this.heapFile = heapFile;
+            this.tid = tid;
+            this.it = null;
+        }
+
+        private Iterator<Tuple> tupleIterator(int pageNo) throws TransactionAbortedException, DbException {
+            HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(heapFile.getId(), pageNo), Permissions.READ_ONLY);
+            return page.iterator();
+        }
+
+        @Override
+        public void open() throws DbException, TransactionAbortedException {
+            this.pageNo = 0;
+            this.it = tupleIterator(pageNo);
+        }
+
+        @Override
+        public boolean hasNext() throws DbException, TransactionAbortedException {
+            if (it == null) return false;
+            if (it.hasNext()) {
+                return true;
+            } else {
+                while (pageNo < numPages() - 1 && !it.hasNext()) {
+                    it = tupleIterator(++pageNo);
+                }
+            }
+            return it.hasNext();
+        }
+
+        @Override
+        public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+            if (it == null) throw new NoSuchElementException("not open yet");
+            return it.next();
+        }
+
+        @Override
+        public void rewind() throws DbException, TransactionAbortedException {
+            close();
+            open();
+        }
+
+        @Override
+        public void close() {
+            it = null;
+        }
+    }
+
     // see DbFile.java for javadocs
     public DbFileIterator iterator(TransactionId tid) {
         // some code goes here
-        return null;
+        return new HeapFileIterator(this);
     }
 
 }

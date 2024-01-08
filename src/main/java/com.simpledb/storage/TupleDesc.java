@@ -38,6 +38,10 @@ public class TupleDesc implements Serializable {
         }
     }
 
+    public TDItem[] getTdItems() {
+        return tdItems;
+    }
+
     private TDItem[] tdItems;
 
     /**

@@ -9,6 +9,8 @@ import com.simpledb.transaction.TransactionId;
 
 import java.io.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -33,6 +35,10 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
+    private int numPages;
+
+    private Map<PageId, Page> pageCache;
+
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -40,6 +46,8 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
+        this.numPages = numPages;
+        pageCache = new HashMap<>();
     }
     
     public static int getPageSize() {
@@ -71,10 +79,20 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        if (!pageCache.containsKey(pid)) {
+            if (pageCache.size() >= numPages) {
+                // TODO: implement in future
+                throw new DbException("maximum size");
+            } else {
+                DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+                Page page = dbFile.readPage(pid);
+                pageCache.put(pid, page);
+            }
+        }
+        return pageCache.get(pid);
     }
 
     /**
@@ -86,7 +104,7 @@ public class BufferPool {
      * @param tid the ID of the transaction requesting the unlock
      * @param pid the ID of the page to unlock
      */
-    public  void unsafeReleasePage(TransactionId tid, PageId pid) {
+    public void unsafeReleasePage(TransactionId tid, PageId pid) {
         // some code goes here
         // not necessary for lab1|lab2
     }
