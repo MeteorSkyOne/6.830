@@ -93,6 +93,10 @@ public class TupleDesc implements Serializable {
         }
     }
 
+    public TupleDesc(TDItem[] tdItems) {
+        this.tdItems = tdItems;
+    }
+
     /**
      * @return the number of fields in this TupleDesc
      */
