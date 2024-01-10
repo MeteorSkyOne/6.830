@@ -1,4 +1,5 @@
 package com.simpledb;
+
 import com.simpledb.common.DbException;
 import com.simpledb.common.Type;
 import com.simpledb.common.Utility;
@@ -6,7 +7,8 @@ import com.simpledb.storage.*;
 import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
 public class SimpleDb {
     public static void main (String[] args)
@@ -82,7 +84,7 @@ public class SimpleDb {
 
                 try {
                     //dynamically load Parser -- if it doesn't exist, print error message
-                    Class<?> c = Class.forName("simpledb.Parser");
+                    Class<?> c = Class.forName("com.simpledb.Parser");
                     Class<?> s = String[].class;
 
                     java.lang.reflect.Method m = c.getMethod("main", s);

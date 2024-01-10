@@ -1,14 +1,6 @@
 package com.simpledb;
 
-import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
 import Zql.*;
-import jline.ArgumentCompletor;
-import jline.ConsoleReader;
-import jline.SimpleCompletor;
 import com.simpledb.common.Database;
 import com.simpledb.common.DbException;
 import com.simpledb.common.Type;
@@ -21,6 +13,14 @@ import com.simpledb.storage.Tuple;
 import com.simpledb.storage.TupleDesc;
 import com.simpledb.transaction.Transaction;
 import com.simpledb.transaction.TransactionId;
+import jline.ArgumentCompletor;
+import jline.ConsoleReader;
+import jline.SimpleCompletor;
+
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class Parser {
     static boolean explain = false;
@@ -292,7 +292,7 @@ public class Parser {
         if (physicalPlan != null) {
             Class<?> c;
             try {
-                c = Class.forName("simpledb.optimizer.OperatorCardinality");
+                c = Class.forName("com.simpledb.optimizer.OperatorCardinality");
 
                 Class<?> p = Operator.class;
                 Class<?> h = Map.class;
@@ -303,7 +303,7 @@ public class Parser {
                 System.out.println("The query plan is:");
                 m.invoke(null, physicalPlan,
                         lp.getTableAliasToIdMapping(), TableStats.getStatsMap());
-                c = Class.forName("simpledb.optimizer.QueryPlanVisualizer");
+                c = Class.forName("com.simpledb.optimizer.QueryPlanVisualizer");
                 m = c.getMethod(
                         "printQueryPlanTree", OpIterator.class, System.out.getClass());
                 m.invoke(c.newInstance(), physicalPlan,System.out);
