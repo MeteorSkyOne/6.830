@@ -9,7 +9,9 @@ import com.simpledb.transaction.TransactionId;
 
 import java.io.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,7 +49,7 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
         this.numPages = numPages;
-        pageCache = new HashMap<>();
+        pageCache = new ConcurrentHashMap<>();
     }
     
     public static int getPageSize() {
@@ -156,7 +158,14 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);
+        if (dbFile instanceof HeapFile heapFile) {
+            List<Page> pages = heapFile.insertTuple(tid, t);
+            pages.forEach(e -> {
+                e.markDirty(true, tid);
+                pageCache.put(e.getId(), e);
+            });
+        }
     }
 
     /**
@@ -172,10 +181,17 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t the tuple to delete
      */
-    public  void deleteTuple(TransactionId tid, Tuple t)
+    public void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
+        DbFile dbFile = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+        if (dbFile instanceof HeapFile heapFile) {
+            ArrayList<Page> pages = heapFile.deleteTuple(tid, t);
+            pages.forEach(e -> {
+                e.markDirty(true, tid);
+                pageCache.put(e.getId(), e);
+            });
+        }
     }
 
     /**

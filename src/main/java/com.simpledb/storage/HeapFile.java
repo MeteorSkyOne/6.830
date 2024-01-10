@@ -2,7 +2,6 @@ package com.simpledb.storage;
 
 import com.simpledb.common.Database;
 import com.simpledb.common.DbException;
-import com.simpledb.common.Debug;
 import com.simpledb.common.Permissions;
 import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
@@ -92,7 +91,15 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
         // some code goes here
-        // not necessary for lab1
+        try {
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            int offset = BufferPool.getPageSize() * page.getId().getPageNumber();
+            raf.seek(offset);
+            raf.write(page.getPageData());
+            raf.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -107,7 +114,20 @@ public class HeapFile implements DbFile {
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        return null;
+        List<Page> modified = new ArrayList<>();
+        for (int i = 0; i < numPages(); i++) {
+            HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(getId(), i), Permissions.READ_WRITE);
+            try {
+                page.insertTuple(t);
+                modified.add(page);
+                return modified;
+            } catch (DbException ignored) {};
+        }
+        HeapPage page = new HeapPage(new HeapPageId(getId(), numPages()), HeapPage.createEmptyPageData());
+        page.insertTuple(t);
+        writePage(page);
+        modified.add(page);
+        return modified;
         // not necessary for lab1
     }
 
@@ -115,8 +135,12 @@ public class HeapFile implements DbFile {
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
         // some code goes here
-        return null;
-        // not necessary for lab1
+        ArrayList<Page> modified = new ArrayList<>();
+        PageId pageId = t.getRecordId().getPageId();
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pageId, Permissions.READ_WRITE);
+        page.deleteTuple(t);
+        modified.add(page);
+        return modified;
     }
 
     private class HeapFileIterator implements DbFileIterator {
