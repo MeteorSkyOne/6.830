@@ -76,7 +76,7 @@ public class IntHistogram {
             case EQUALS -> {
                 // (h / w) / ntups
                 if (v < min || v > max) return 0;
-                selectivity = bucket[getBucketIndex(v)] / width / count;
+                selectivity = bucket[getBucketIndex(v)] / Math.ceil(width) / count;
             }
             case NOT_EQUALS -> {
                 return 1 - estimateSelectivity(Predicate.Op.EQUALS, v);
@@ -120,7 +120,11 @@ public class IntHistogram {
     public double avgSelectivity()
     {
         // some code goes here
-        return 1.0;
+        double selectivity = 0;
+        for (int i : bucket) {
+            selectivity += (double) i / count;
+        }
+        return selectivity / buckets;
     }
     
     /**
