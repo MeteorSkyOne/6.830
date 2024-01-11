@@ -1,14 +1,13 @@
 package com.simpledb.optimizer;
 
-import com.simpledb.common.Database;
 import com.simpledb.ParsingException;
+import com.simpledb.common.Database;
 import com.simpledb.execution.*;
-import com.simpledb.storage.TupleDesc;
-
-import java.util.*;
 
 import javax.swing.*;
-import javax.swing.tree.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import java.util.*;
 
 /**
  * The JoinOptimizer class is responsible for ordering a series of joins
@@ -78,7 +77,7 @@ public class JoinOptimizer {
             try {
                 // dynamically load HashEquiJoin -- if it doesn't exist, just
                 // fall back on regular join
-                Class<?> c = Class.forName("simpledb.execution.HashEquiJoin");
+                Class<?> c = Class.forName("com.simpledb.execution.HashEquiJoin");
                 java.lang.reflect.Constructor<?> ct = c.getConstructors()[0];
                 j = (OpIterator) ct
                         .newInstance(new Object[] { p, plan1, plan2 });
@@ -130,7 +129,9 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            // joincost(t1 join t2) = scancost(t1) + ntups(t1) x scancost(t2) //IO cost
+            //                        + ntups(t1) x ntups(t2)  //CPU cost
+            return cost1 + card1 * cost2 + card1 * card2;
         }
     }
 
@@ -176,6 +177,39 @@ public class JoinOptimizer {
                                                    Map<String, Integer> tableAliasToId) {
         int card = 1;
         // some code goes here
+        switch (joinOp) {
+            case EQUALS -> {
+                if (t1pkey && !t2pkey) {
+                    card = card2;
+                }
+                if (!t1pkey && t2pkey) {
+                    card = card1;
+                }
+                if (t1pkey && t2pkey) {
+                    card = Math.min(card1, card2);
+                }
+                if (!t1pkey && !t2pkey) {
+                    card = Math.max(card1, card2);
+                }
+            }
+            case NOT_EQUALS -> {
+                if (t1pkey && !t2pkey) {
+                    card = card1 * card2 - card2;
+                }
+                if (!t1pkey && t2pkey) {
+                    card = card1 * card2 - card1;
+                }
+                if (t1pkey && t2pkey) {
+                    card = card1 * card2 - Math.min(card1, card2);
+                }
+                if (!t1pkey && !t2pkey) {
+                    card = card1 * card2 - Math.max(card1, card2);
+                }
+            }
+            default -> {
+                card = (int) (0.3 * card1 * card2);
+            }
+        }
         return card <= 0 ? 1 : card;
     }
 
