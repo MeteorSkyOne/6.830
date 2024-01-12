@@ -20,7 +20,7 @@ public class JoinOptimizer {
 
     /**
      * Constructor
-     * 
+     *
      * @param p
      *            the logical plan being optimized
      * @param joins
@@ -38,7 +38,7 @@ public class JoinOptimizer {
      * inner/outer here -- because OpIterator's don't provide any cardinality
      * estimates, and stats only has information about the base tables. For this
      * reason, the plan1
-     * 
+     *
      * @param lj
      *            The join being considered
      * @param plan1
@@ -94,14 +94,14 @@ public class JoinOptimizer {
 
     /**
      * Estimate the cost of a join.
-     * 
+     *
      * The cost of the join should be calculated based on the join algorithm (or
      * algorithms) that you implemented for Lab 2. It should be a function of
      * the amount of data that must be read over the course of the query, as
      * well as the number of CPU opertions performed by your join. Assume that
      * the cost of a single predicate application is roughly 1.
-     * 
-     * 
+     *
+     *
      * @param j
      *            A LogicalJoinNode representing the join operation being
      *            performed.
@@ -138,7 +138,7 @@ public class JoinOptimizer {
     /**
      * Estimate the cardinality of a join. The cardinality of a join is the
      * number of tuples produced by the join.
-     * 
+     *
      * @param j
      *            A LogicalJoinNode representing the join operation being
      *            performed.
@@ -216,7 +216,7 @@ public class JoinOptimizer {
     /**
      * Helper method to enumerate all of the subsets of a given size of a
      * specified vector.
-     * 
+     *
      * @param v
      *            The vector whose subsets are desired
      * @param size
@@ -225,30 +225,28 @@ public class JoinOptimizer {
      */
     public <T> Set<Set<T>> enumerateSubsets(List<T> v, int size) {
         Set<Set<T>> els = new HashSet<>();
-        els.add(new HashSet<>());
-        // Iterator<Set> it;
-        // long start = System.currentTimeMillis();
-
-        for (int i = 0; i < size; i++) {
-            Set<Set<T>> newels = new HashSet<>();
-            for (Set<T> s : els) {
-                for (T t : v) {
-                    Set<T> news = new HashSet<>(s);
-                    if (news.add(t))
-                        newels.add(news);
-                }
-            }
-            els = newels;
-        }
+        permute(v, size, 0, els, new ArrayList<>());
 
         return els;
 
     }
 
+    private <T> void permute(List<T> list, int size, int begin, Set<Set<T>> res, List<T> path) {
+        if (path.size() == size) {
+            res.add(new HashSet<>(path));
+            return;
+        }
+        for (int i = begin; i < list.size(); i++) {
+            path.add(list.get(i));
+            permute(list, size, i + 1, res, path);
+            path.remove(path.size() - 1);
+        }
+    }
+
     /**
      * Compute a logical, reasonably efficient join on the specified tables. See
      * PS4 for hints on how this should be implemented.
-     * 
+     *
      * @param stats
      *            Statistics for each table involved in the join, referenced by
      *            base table names, not alias
@@ -269,10 +267,30 @@ public class JoinOptimizer {
             Map<String, TableStats> stats,
             Map<String, Double> filterSelectivities, boolean explain)
             throws ParsingException {
-
         // some code goes here
-        //Replace the following
-        return joins;
+        PlanCache planCache = new PlanCache();
+        CostCard bestCard = new CostCard();
+        for (int i = 1; i <= joins.size(); i++) {
+            for (Set<LogicalJoinNode> subset : enumerateSubsets(joins, i)) {
+                double bestCostSoFar = Double.MAX_VALUE;
+                for (LogicalJoinNode joinNode : subset) {
+                    CostCard costCard = computeCostAndCardOfSubplan(stats, filterSelectivities, joinNode, subset, bestCostSoFar, planCache);
+                    if (costCard == null) {
+                        // now is the best
+                        continue;
+                    }
+                    bestCostSoFar = costCard.cost;
+                    bestCard = costCard;
+                }
+                if (bestCostSoFar != Double.MAX_VALUE) {
+                    planCache.addPlan(subset, bestCard.cost, bestCard.card, bestCard.plan);
+                }
+            }
+        }
+        if (explain) {
+            printJoins(bestCard.plan, planCache, stats, filterSelectivities);
+        }
+        return bestCard.plan;
     }
 
     // ===================== Private Methods =================================
@@ -282,7 +300,7 @@ public class JoinOptimizer {
      * joinToRemove to joinSet (joinSet should contain joinToRemove), given that
      * all of the subsets of size joinSet.size() - 1 have already been computed
      * and stored in PlanCache pc.
-     * 
+     *
      * @param stats
      *            table stats for all of the tables, referenced by table names
      *            rather than alias (see {@link #orderJoins})
@@ -441,7 +459,7 @@ public class JoinOptimizer {
     /**
      * Return true if field is a primary key of the specified table, false
      * otherwise
-     * 
+     *
      * @param tableAlias
      *            The alias of the table in the query
      * @param field
@@ -472,7 +490,7 @@ public class JoinOptimizer {
      * Helper function to display a Swing window with a tree representation of
      * the specified list of joins. See {@link #orderJoins}, which may want to
      * call this when the analyze flag is true.
-     * 
+     *
      * @param js
      *            the join plan to visualize
      * @param pc
