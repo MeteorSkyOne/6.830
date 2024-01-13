@@ -1,18 +1,19 @@
 package com.simpledb;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
-import junit.framework.JUnit4TestAdapter;
 import com.simpledb.common.Database;
 import com.simpledb.common.Utility;
 import com.simpledb.storage.*;
 import com.simpledb.systemtest.SystemTestUtil;
 import com.simpledb.transaction.TransactionId;
+import junit.framework.JUnit4TestAdapter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class HeapFileWriteTest extends TestUtil.CreateHeapFile {
     private TransactionId tid;

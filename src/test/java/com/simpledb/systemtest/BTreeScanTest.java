@@ -2,15 +2,6 @@ package com.simpledb.systemtest;
 
 import com.simpledb.common.Database;
 import com.simpledb.common.DbException;
-
-import static org.junit.Assert.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
-import org.junit.Test;
-
 import com.simpledb.common.Utility;
 import com.simpledb.execution.IndexPredicate;
 import com.simpledb.execution.Predicate.Op;
@@ -20,6 +11,14 @@ import com.simpledb.index.BTreeUtility;
 import com.simpledb.storage.*;
 import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Dumps the contents of a table.

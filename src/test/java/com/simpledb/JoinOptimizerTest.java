@@ -1,15 +1,6 @@
 package com.simpledb;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.simpledb.common.Database;
-import com.simpledb.common.DbException;
 import com.simpledb.common.Utility;
 import com.simpledb.execution.Predicate;
 import com.simpledb.optimizer.JoinOptimizer;
@@ -20,8 +11,14 @@ import com.simpledb.storage.HeapFile;
 import com.simpledb.storage.HeapFileEncoder;
 import com.simpledb.systemtest.SimpleDbTestBase;
 import com.simpledb.systemtest.SystemTestUtil;
-import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class JoinOptimizerTest extends SimpleDbTestBase {
 

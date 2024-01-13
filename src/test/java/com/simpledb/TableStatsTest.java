@@ -1,15 +1,6 @@
 package com.simpledb;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.Assert;
-
 import com.simpledb.common.Database;
-import com.simpledb.common.DbException;
 import com.simpledb.execution.Predicate;
 import com.simpledb.optimizer.TableStats;
 import com.simpledb.storage.Field;
@@ -17,7 +8,13 @@ import com.simpledb.storage.HeapFile;
 import com.simpledb.storage.IntField;
 import com.simpledb.systemtest.SimpleDbTestBase;
 import com.simpledb.systemtest.SystemTestUtil;
-import com.simpledb.transaction.TransactionAbortedException;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TableStatsTest extends SimpleDbTestBase {
 	public static final int IO_COST = 71;

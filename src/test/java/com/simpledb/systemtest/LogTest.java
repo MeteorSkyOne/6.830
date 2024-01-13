@@ -1,10 +1,5 @@
 package com.simpledb.systemtest;
 
-import java.io.*;
-import java.util.*;
-
-import org.junit.Test;
-
 import com.simpledb.common.Database;
 import com.simpledb.common.DbException;
 import com.simpledb.common.Permissions;
@@ -14,8 +9,15 @@ import com.simpledb.execution.SeqScan;
 import com.simpledb.storage.*;
 import com.simpledb.transaction.Transaction;
 import com.simpledb.transaction.TransactionAbortedException;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Test logging, aborts, and recovery.

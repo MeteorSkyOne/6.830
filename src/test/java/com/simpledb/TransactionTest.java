@@ -1,16 +1,17 @@
 package com.simpledb;
 
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import junit.framework.JUnit4TestAdapter;
 import com.simpledb.common.Database;
 import com.simpledb.common.Permissions;
 import com.simpledb.common.Utility;
 import com.simpledb.storage.*;
 import com.simpledb.transaction.TransactionId;
+import junit.framework.JUnit4TestAdapter;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
 
 public class TransactionTest extends TestUtil.CreateHeapFile {
   private PageId p0, p1, p2;

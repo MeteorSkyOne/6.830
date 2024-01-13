@@ -1,21 +1,16 @@
 package com.simpledb.systemtest;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
-
-import org.junit.Assert;
-
 import com.simpledb.common.*;
 import com.simpledb.execution.OpIterator;
 import com.simpledb.execution.SeqScan;
 import com.simpledb.storage.*;
 import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
+import org.junit.Assert;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class SystemTestUtil {
     public static final TupleDesc SINGLE_INT_DESCRIPTOR =
