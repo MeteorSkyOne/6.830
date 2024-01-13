@@ -10,6 +10,8 @@ import com.simpledb.storage.TupleDesc;
 import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
 
+import java.io.IOException;
+
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
  * them from the table they belong to.
@@ -29,7 +31,7 @@ public class Delete extends Operator {
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
-     * 
+     *
      * @param t
      *            The transaction this delete runs in
      * @param child
@@ -39,7 +41,7 @@ public class Delete extends Operator {
         // some code goes here
         this.tid = t;
         this.child = child;
-        this.td = child.getTupleDesc();
+        this.td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{"deleteNums"});;
         this.res = null;
     }
 
@@ -70,7 +72,7 @@ public class Delete extends Operator {
      * Deletes tuples as they are read from the child operator. Deletes are
      * processed via the buffer pool (which can be accessed via the
      * Database.getBufferPool() method.
-     * 
+     *
      * @return A 1-field tuple containing the number of deleted records.
      * @see Database#getBufferPool
      * @see BufferPool#deleteTuple
@@ -87,7 +89,7 @@ public class Delete extends Operator {
             try {
                 Database.getBufferPool().deleteTuple(tid, next);
                 cnt++;
-            } catch (Exception e) {}
+            } catch (IOException e) {}
         }
         res.setField(0, new IntField(cnt));
         return res;
@@ -96,12 +98,13 @@ public class Delete extends Operator {
     @Override
     public OpIterator[] getChildren() {
         // some code goes here
-        return null;
+        return new OpIterator[]{child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
+        this.child = children[0];
     }
 
 }

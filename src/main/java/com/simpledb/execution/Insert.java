@@ -45,8 +45,8 @@ public class Insert extends Operator {
         this.child = child;
         this.tableId = tableId;
         DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);
-        this.td = dbFile.getTupleDesc();
-        if (!td.equals(child.getTupleDesc())) throw new DbException("mismatch TupleDesc");
+        this.td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{"insertNums"});
+        if (!dbFile.getTupleDesc().equals(child.getTupleDesc())) throw new DbException("mismatch TupleDesc");
         this.res = null;
     }
 
