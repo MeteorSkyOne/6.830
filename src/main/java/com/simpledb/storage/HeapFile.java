@@ -122,6 +122,11 @@ public class HeapFile implements DbFile {
         List<Page> modified = new ArrayList<>();
         for (int i = 0; i < numPages(); i++) {
             HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, new HeapPageId(getId(), i), Permissions.READ_WRITE);
+            if (page.getNumEmptySlots() == 0) {
+                // release lock when the page is full
+                Database.getBufferPool().unsafeReleasePage(tid, page.getId());
+                continue;
+            }
             try {
                 page.insertTuple(t);
                 modified.add(page);

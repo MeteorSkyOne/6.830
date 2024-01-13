@@ -45,9 +45,9 @@ public class LockManager {
             case READ_WRITE -> {
                 Set<TransactionId> rOwner = rLockMap.getOrDefault(o, null);
                 if (rOwner != null && rOwner.size() > 1) {
-                    // someone holds read lock, wait until it releases
+                    // someone holds read lock, throw exception to avoid deadlock
                     System.out.println(tid + " acquire " + o + " read lock failed");
-                    return false;
+                    throw new TransactionAbortedException();
                 }
 
                 if (rOwner == null || rOwner.isEmpty() || rOwner.contains(tid)) {

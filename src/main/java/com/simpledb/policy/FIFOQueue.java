@@ -14,7 +14,10 @@ public class FIFOQueue<E> extends LinkedList<E> {
 
     @Override
     public synchronized boolean add(E o) {
-        return super.add(o);
+        if (!super.contains(o)) {
+            return super.add(o);
+        }
+        return false;
     }
 
 }
