@@ -91,12 +91,12 @@ public class BufferPool {
         // some code goes here
         long start = System.currentTimeMillis();
         while (true) {
-            if (lockManager.acquireLock(tid, perm, pid)) {
-                break;
-            }
-            long now = System.currentTimeMillis();
-            if (now - start > 500) {
-                throw new TransactionAbortedException();
+            try {
+                if (lockManager.acquireLock(tid, perm, pid)) {
+                    break;
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
         if (!pageCache.containsKey(pid)) {

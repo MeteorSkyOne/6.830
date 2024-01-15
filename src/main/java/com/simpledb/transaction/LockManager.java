@@ -1,8 +1,10 @@
 package com.simpledb.transaction;
 
 import com.simpledb.common.Permissions;
+import com.simpledb.utils.WaitForGraph;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,12 +15,15 @@ public class LockManager {
 
     private final Map<Object, TransactionId> wLockMap;
 
+    private final WaitForGraph waitForGraph;
+
     public LockManager() {
         this.rLockMap = new ConcurrentHashMap<>();
         this.wLockMap = new ConcurrentHashMap<>();
+        this.waitForGraph = new WaitForGraph();
     }
 
-    public synchronized boolean acquireLock(TransactionId tid, Permissions perm, Object o) throws TransactionAbortedException {
+    public synchronized boolean acquireLock(TransactionId tid, Permissions perm, Object o) throws TransactionAbortedException, InterruptedException {
         switch (perm) {
             case READ_ONLY -> {
                 TransactionId wOwner = wLockMap.getOrDefault(o, null);
@@ -41,16 +46,21 @@ public class LockManager {
                     return true;
                 }
                 // someone holds wLock, wait until it release
-            }
-            case READ_WRITE -> {
-                Set<TransactionId> rOwner = rLockMap.getOrDefault(o, null);
-                if (rOwner != null && rOwner.size() > 1) {
-                    // someone holds read lock, throw exception to avoid deadlock
-                    System.out.println(tid + " acquire " + o + " read lock failed");
+                waitForGraph.addVertex(tid);
+                waitForGraph.addVertex(wOwner);
+                waitForGraph.addEdge(tid, wOwner);
+                if (waitForGraph.cycleDetect(tid)) {
+                    // deadlock
+                    waitForGraph.removeToEdge(tid);
                     throw new TransactionAbortedException();
                 }
+                wait(50);
+            }
+            case READ_WRITE -> {
+                Set<TransactionId> rOwner = rLockMap.getOrDefault(o, new HashSet<>());
 
-                if (rOwner == null || rOwner.isEmpty() || rOwner.contains(tid)) {
+                if (rOwner.isEmpty() || (rOwner.size() == 1 && rOwner.contains(tid))) {
+                    // only itself has read lock, then get
                     TransactionId wOwner = wLockMap.getOrDefault(o, null);
                     if (wOwner == null) {
                         HashSet<TransactionId> owner = new HashSet<>();
@@ -65,9 +75,29 @@ public class LockManager {
                     if (wOwner.equals(tid)) {
                         return true;
                     } else {
+                        // impossible to get here
                         throw new TransactionAbortedException();
                     }
                 }
+
+                if (rOwner.size() > 1) {
+                    // someone else holds read lock, throw exception to avoid deadlock
+                    System.out.println(tid + " acquire " + o + " read lock failed");
+                    throw new TransactionAbortedException();
+                }
+
+                // someone holds write lock, then wait
+                Iterator<TransactionId> it = rOwner.iterator();
+                while (it.hasNext()) {
+                    waitForGraph.addVertex(it.next());
+                    waitForGraph.addEdge(tid, it.next());
+                }
+                if (waitForGraph.cycleDetect(tid)) {
+                    // deadlock
+                    waitForGraph.removeToEdge(tid);
+                    throw new TransactionAbortedException();
+                }
+                wait(10);
             }
         }
         return false;
@@ -82,6 +112,8 @@ public class LockManager {
         }
         // release wLock
         wLockMap.remove(o);
+        waitForGraph.removeToEdge(tid);
+        this.notifyAll();
     }
 
     public synchronized boolean isHoldsLock(TransactionId tid, Object o) {
