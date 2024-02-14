@@ -9,7 +9,6 @@ import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -197,13 +196,11 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);
-        if (dbFile instanceof HeapFile heapFile) {
-            List<Page> pages = heapFile.insertTuple(tid, t);
-            pages.forEach(e -> {
-                e.markDirty(true, tid);
-                pageCache.put(e.getId(), e);
-            });
-        }
+        List<Page> pages = dbFile.insertTuple(tid, t);
+        pages.forEach(e -> {
+            e.markDirty(true, tid);
+            pageCache.put(e.getId(), e);
+        });
     }
 
     /**
@@ -223,13 +220,11 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         DbFile dbFile = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
-        if (dbFile instanceof HeapFile heapFile) {
-            ArrayList<Page> pages = heapFile.deleteTuple(tid, t);
-            pages.forEach(e -> {
-                e.markDirty(true, tid);
-                pageCache.put(e.getId(), e);
-            });
-        }
+        List<Page> pages = dbFile.deleteTuple(tid, t);
+        pages.forEach(e -> {
+            e.markDirty(true, tid);
+            pageCache.put(e.getId(), e);
+        });
     }
 
     /**
