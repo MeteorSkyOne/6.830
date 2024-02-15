@@ -240,6 +240,7 @@ public class LogTest extends SimpleDbTestBase {
         t2.commit();
 
         insertRow(hf1, t1, 4);
+        Database.getLogFile().print();
         abort(t1);
 
         Transaction t = new Transaction();

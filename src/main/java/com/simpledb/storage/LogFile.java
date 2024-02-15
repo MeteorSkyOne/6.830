@@ -144,7 +144,7 @@ public class LogFile {
     public synchronized int getTotalRecords() {
         return totalRecords;
     }
-    
+
     /** Write an abort record to the log for the specified tid, force
         the log to disk, and perform a rollback
         @param tid The aborting transaction.
@@ -249,7 +249,7 @@ public class LogFile {
         byte[] pageData = p.getPageData();
         raf.writeInt(pageData.length);
         raf.write(pageData);
-        //        Debug.log ("WROTE PAGE DATA, CLASS = " + pageClassName + ", table = " +  pid.getTableId() + ", page = " + pid.pageno());
+               Debug.log ("WROTE PAGE DATA, CLASS = " + pageClassName + ", table = " +  pid.getTableId() + ", page = " + pid.getPageNumber());
     }
 
     Page readPageData(RandomAccessFile raf) throws IOException {
@@ -459,11 +459,42 @@ public class LogFile {
         @param tid The transaction to rollback
     */
     public void rollback(TransactionId tid)
-        throws NoSuchElementException, IOException {
+            throws NoSuchElementException, IOException {
         synchronized (Database.getBufferPool()) {
             synchronized(this) {
                 preAppend();
                 // some code goes here
+                Long tidOffset = tidToFirstLogRecord.get(tid.getId());
+                if (tidOffset == null) return;
+                raf.seek(tidOffset);
+                while (raf.getFilePointer() != raf.length()) {
+                    int cpType = raf.readInt();
+                    long cpTid = raf.readLong();
+                    if (cpTid != tid.getId()) continue;
+
+                    if (cpType == UPDATE_RECORD) {
+                        Page before = readPageData(raf);
+                        Page after = readPageData(raf);
+                        PageId pageId = before.getId();
+                        if (tid.getId() == cpTid) {
+                            int tableId = pageId.getTableId();
+                            Database.getBufferPool().discardPage(pageId);
+                            DbFile dbFile = Database.getCatalog().getDatabaseFile(tableId);
+                            dbFile.writePage(before);
+                        }
+                    } else {
+                        // skip other record
+                        if (cpType == CHECKPOINT_RECORD) {
+                            int numTransactions = raf.readInt();
+                            while (numTransactions-- > 0) {
+                                raf.readLong();
+                                raf.readLong();
+                            }
+                        }
+                    }
+                    raf.readLong();
+                }
+                raf.seek(raf.length());
             }
         }
     }
@@ -491,6 +522,97 @@ public class LogFile {
             synchronized (this) {
                 recoveryUndecided = false;
                 // some code goes here
+                raf.seek(0);
+                long checkPoint = raf.readLong();
+                if (checkPoint != -1) {
+                    // have checkpoint, then seek to pos
+                    raf.seek(checkPoint);
+                }
+                Set<Long> committedTids = new HashSet<>();
+                Map<Long, List<Page>> beforePages = new HashMap<>();
+                Map<Long, List<Page>> afterPages = new HashMap<>();
+                Map<Long, Long> activeTransactions = new HashMap<>();
+                while (raf.getFilePointer() != raf.length()) {
+                    int cpType = raf.readInt();
+                    long cpTid = raf.readLong();
+                    switch (cpType) {
+                        case UPDATE_RECORD -> {
+                            Page before = readPageData(raf);
+                            Page after = readPageData(raf);
+                            List<Page> beforePageList = beforePages.getOrDefault(cpTid, new ArrayList<>());
+                            beforePageList.add(before);
+                            List<Page> afterPageList = afterPages.getOrDefault(cpTid, new ArrayList<>());
+                            afterPageList.add(after);
+                            beforePages.put(cpTid, beforePageList);
+                            afterPages.put(cpTid, afterPageList);
+                        }
+                        case CHECKPOINT_RECORD -> {
+                            int numTransactions = raf.readInt();
+
+                            while (numTransactions-- > 0) {
+                                long tid = raf.readLong();
+                                long firstRecord = raf.readLong();
+                                activeTransactions.put(tid, firstRecord);
+                            }
+                        }
+                        case COMMIT_RECORD -> {
+                            committedTids.add(cpTid);
+                        }
+                    }
+                    raf.readLong();
+                }
+
+                // handle uncommitted transactions, set before image to them
+                for (Long tid : beforePages.keySet()) {
+                    if (!committedTids.contains(tid)) {
+                        List<Page> pages = beforePages.get(tid);
+                        for (Page page : pages) {
+                            Database.getCatalog().getDatabaseFile(page.getId().getTableId()).writePage(page);
+                        }
+                    }
+                }
+
+                // handle committed transactions, set after image to them
+                for (Long tid : committedTids) {
+                    if (afterPages.containsKey(tid)) {
+                        List<Page> pages = afterPages.get(tid);
+                        for (Page page : pages) {
+                            Database.getCatalog().getDatabaseFile(page.getId().getTableId()).writePage(page);
+                        }
+                    }
+                }
+
+                // handle activeTransaction between checkpoint
+                for (Map.Entry<Long, Long> entry : activeTransactions.entrySet()) {
+                    Long tid = entry.getKey();
+                    Long offset = entry.getValue();
+
+                    raf.seek(offset);
+                    while (raf.getFilePointer() != raf.length()) {
+                        int cpType = raf.readInt();
+                        long cpTid = raf.readLong();
+                        switch (cpType) {
+                            case UPDATE_RECORD -> {
+                                Page before = readPageData(raf);
+                                Page after = readPageData(raf);
+                                Page targetPage = committedTids.contains(tid) ? after : before;
+
+                                if (cpTid == tid) {
+                                    Database.getCatalog().getDatabaseFile(targetPage.getId().getTableId()).writePage(targetPage);
+                                }
+                            }
+                            case CHECKPOINT_RECORD -> {
+                                int numTransactions = raf.readInt();
+
+                                while (numTransactions-- > 0) {
+                                    raf.readLong();
+                                    raf.readLong();
+                                }
+                            }
+                        }
+                        raf.readLong();
+                    }
+                }
             }
          }
     }

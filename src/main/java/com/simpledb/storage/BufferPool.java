@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The BufferPool is also responsible for locking;  when a transaction fetches
  * a page, BufferPool checks that the transaction has the appropriate
  * locks to read/write the page.
- * 
+ *
  * @Threadsafe, all fields are final
  */
 public class BufferPool {
@@ -234,9 +234,11 @@ public class BufferPool {
      */
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
-        pageCache.forEach((k, v) -> {
+        pageCache.forEach((pageId, page) -> {
             try {
-                flushPage(k);
+                if (page.isDirty() != null) {
+                    flushPage(pageId);
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -266,8 +268,15 @@ public class BufferPool {
         // some code goes here
         DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
         Page page = pageCache.get(pid);
-        page.markDirty(false, new TransactionId());
+        // append an update record to the log, with
+        // a before-image and after-image.
+        TransactionId dirtier = page.isDirty();
+        if (dirtier != null){
+            Database.getLogFile().logWrite(dirtier, page.getBeforeImage(), page);
+            Database.getLogFile().force();
+        }
         dbFile.writePage(page);
+        page.markDirty(false, null);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -278,6 +287,8 @@ public class BufferPool {
         for (Map.Entry<PageId, Page> entry : pageCache.entrySet()) {
             Page page = entry.getValue();
             if (page.isDirty() != null && page.isDirty().equals(tid)) {
+                // use current page contents as the before-image
+                // for the next transaction that modifies this page.
                 page.setBeforeImage();
                 flushPage(page.getId());
             }
