@@ -3,7 +3,8 @@ package com.simpledb.storage;
 import com.simpledb.common.Database;
 import com.simpledb.common.DbException;
 import com.simpledb.common.Permissions;
-import com.simpledb.policy.FIFOQueue;
+import com.simpledb.policy.EvictPolicy;
+import com.simpledb.policy.LRUPolicy;
 import com.simpledb.transaction.LockManager;
 import com.simpledb.transaction.TransactionAbortedException;
 import com.simpledb.transaction.TransactionId;
@@ -39,7 +40,7 @@ public class BufferPool {
 
     private Map<PageId, Page> pageCache;
 
-    private FIFOQueue<PageId> pageQueue;
+    private EvictPolicy evictPolicy;
 
     private LockManager lockManager;
 
@@ -52,7 +53,7 @@ public class BufferPool {
         // some code goes here
         this.numPages = numPages;
         this.pageCache = new ConcurrentHashMap<>();
-        this.pageQueue = new FIFOQueue<>(numPages);
+        this.evictPolicy = new LRUPolicy(numPages);
         this.lockManager = new LockManager();
     }
 
@@ -101,10 +102,10 @@ public class BufferPool {
         if (!pageCache.containsKey(pid)) {
             DbFile dbFile = Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page = dbFile.readPage(pid);
-            if (pageQueue.size() >= numPages) {
+            if (pageCache.size() >= numPages) {
                 evictPage();
             }
-            pageQueue.add(pid);
+            evictPolicy.put(pid);
             pageCache.put(pid, page);
         }
         return pageCache.get(pid);
@@ -257,7 +258,6 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         pageCache.remove(pid);
-        pageQueue.remove(pid);
     }
 
     /**
@@ -301,8 +301,8 @@ public class BufferPool {
      */
     private synchronized void evictPage() throws DbException {
         // some code goes here
-        for (int i = 0; i < pageQueue.size(); i++) {
-            PageId pid = pageQueue.get(i);
+        for (int i = 0; i < pageCache.size(); i++) {
+            PageId pid = evictPolicy.pop();
             if (pageCache.get(pid).isDirty() == null) {
                 try {
                     flushPage(pid);
@@ -310,8 +310,9 @@ public class BufferPool {
                     e.printStackTrace();
                 }
                 pageCache.remove(pid);
-                pageQueue.remove(i);
                 return;
+            } else {
+                evictPolicy.put(pid);
             }
         }
         throw new DbException("all dirty pages");
