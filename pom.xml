@@ -15,7 +15,7 @@
         <hamcrest.version>1.3</hamcrest.version>
         <jline.version>0.9.94</jline.version>
         <zql.version>1.0</zql.version>
-        <mina.core.version>2.0.4</mina.core.version>
+        <mina.core.version>2.0.27</mina.core.version>
         <mina.filter.compression.version>2.0.7</mina.filter.compression.version>
         <jzlib.version>1.0.7</jzlib.version>
         <slf4j.api.version>1.6.1</slf4j.api.version>
